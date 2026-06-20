@@ -33,7 +33,7 @@ class AgentRouterClient:
             api_key=api_key,
             default_headers={
                 "Originator": "codex_cli_rs",
-                "User-Agent": "codex_cli_rs/0.101.0 (Mac OS 26.0.1; arm64) Apple_Terminal/464",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
                 "Version": "0.101.0"
             }
         )
