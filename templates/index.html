@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Optimizer — ATS & Human Ready</title>
+    <meta name="description" content="AI-powered resume optimization tool that tailors your resume for specific job descriptions to pass ATS screening and impress recruiters.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* ═══════════════════════════════════════════
+           Design System
+           ═══════════════════════════════════════════ */
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #111827;
+            --bg-card: #1a1f35;
+            --bg-card-hover: #222845;
+            --bg-input: #0d1220;
+            --border-color: #2a3050;
+            --border-focus: #6366f1;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-1: #6366f1;
+            --accent-2: #8b5cf6;
+            --accent-3: #a78bfa;
+            --gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%);
+            --gradient-bg: linear-gradient(180deg, #0a0e1a 0%, #111827 100%);
+            --success: #34d399;
+            --success-bg: rgba(52,211,153,0.1);
+            --warning: #fbbf24;
+            --error: #f87171;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+            --shadow-md: 0 4px 20px rgba(0,0,0,0.4);
+            --shadow-lg: 0 8px 40px rgba(0,0,0,0.5);
+            --shadow-glow: 0 0 30px rgba(99,102,241,0.15);
+        }
+
+        /* ═══════════════════════════════════════════
+           Reset & Base
+           ═══════════════════════════════════════════ */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--gradient-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ═══════════════════════════════════════════
+           Background Decoration
+           ═══════════════════════════════════════════ */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.06) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.05) 0%, transparent 50%),
+                        radial-gradient(ellipse at 50% 80%, rgba(167,139,250,0.04) 0%, transparent 50%);
+            z-index: 0;
+            pointer-events: none;
+            animation: bgFloat 30s ease-in-out infinite;
+        }
+        @keyframes bgFloat {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(2%, -2%) rotate(1deg); }
+            66% { transform: translate(-1%, 1%) rotate(-0.5deg); }
+        }
+
+        /* ═══════════════════════════════════════════
+           Layout
+           ═══════════════════════════════════════════ */
+        .container {
+            position: relative; z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px 20px 60px;
+        }
+
+        /* ═══════════════════════════════════════════
+           Header
+           ═══════════════════════════════════════════ */
+        .header { text-align: center; padding: 40px 0 32px; }
+        .header__badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 16px;
+            background: rgba(99,102,241,0.1);
+            border: 1px solid rgba(99,102,241,0.2);
+            border-radius: 100px;
+            font-size: 0.75rem; font-weight: 600;
+            color: var(--accent-3);
+            text-transform: uppercase; letter-spacing: 1.5px;
+            margin-bottom: 20px;
+        }
+        .header__badge .dot {
+            width: 6px; height: 6px;
+            background: var(--success); border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.5); }
+        }
+        .header h1 {
+            font-size: clamp(2rem, 5vw, 3rem); font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text; line-height: 1.2; margin-bottom: 12px;
+        }
+        .header p {
+            font-size: clamp(0.9rem, 2vw, 1.05rem);
+            color: var(--text-secondary); max-width: 640px; margin: 0 auto;
+        }
+
+        /* ═══════════════════════════════════════════
+           Input Grid
+           ═══════════════════════════════════════════ */
+        .input-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 20px; margin-bottom: 24px;
+        }
+        @media (max-width: 768px) { .input-grid { grid-template-columns: 1fr; } }
+
+        .input-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg); padding: 24px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .input-card:focus-within {
+            border-color: var(--accent-1); box-shadow: var(--shadow-glow);
+        }
+        .input-card__header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 14px;
+        }
+        .input-card__label {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 0.85rem; font-weight: 600;
+            color: var(--text-primary);
+            text-transform: uppercase; letter-spacing: 0.8px;
+        }
+        .input-card__icon {
+            width: 32px; height: 32px;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--gradient-primary); border-radius: var(--radius-sm);
+            font-size: 1rem;
+        }
+        .input-card__charcount {
+            font-size: 0.75rem; color: var(--text-muted);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ── Tab Switcher ── */
+        .tab-switcher {
+            display: flex; gap: 4px;
+            background: var(--bg-input);
+            border-radius: var(--radius-sm);
+            padding: 3px; margin-bottom: 14px;
+        }
+        .tab-btn {
+            flex: 1; padding: 8px 12px;
+            background: transparent; color: var(--text-muted);
+            border: none; border-radius: 6px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8rem; font-weight: 500;
+            cursor: pointer; transition: all 0.2s ease;
+        }
+        .tab-btn.active {
+            background: var(--accent-1); color: white;
+        }
+        .tab-btn:hover:not(.active) { color: var(--text-primary); }
+
+        /* ── Tab Content ── */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .input-card textarea {
+            width: 100%; min-height: 260px;
+            background: var(--bg-input); color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md); padding: 16px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.88rem; line-height: 1.7;
+            resize: vertical; transition: border-color 0.3s ease; outline: none;
+        }
+        .input-card textarea::placeholder { color: var(--text-muted); }
+        .input-card textarea:focus { border-color: var(--accent-1); }
+
+        /* ── Dropzone ── */
+        .dropzone {
+            min-height: 260px;
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius-md);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 12px; padding: 32px 20px;
+            cursor: pointer; transition: all 0.3s ease;
+            position: relative;
+        }
+        .dropzone:hover, .dropzone.dragover {
+            border-color: var(--accent-1);
+            background: rgba(99,102,241,0.05);
+        }
+        .dropzone__icon {
+            font-size: 2.5rem; opacity: 0.6;
+        }
+        .dropzone__text {
+            font-size: 0.9rem; color: var(--text-secondary);
+            text-align: center;
+        }
+        .dropzone__text strong {
+            color: var(--accent-3); cursor: pointer;
+        }
+        .dropzone__formats {
+            font-size: 0.75rem; color: var(--text-muted);
+        }
+        .dropzone input[type="file"] {
+            position: absolute; inset: 0;
+            opacity: 0; cursor: pointer;
+        }
+
+        /* ── File Preview (after upload) ── */
+        .file-preview {
+            display: none;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 16px; min-height: 260px;
+        }
+        .file-preview.visible { display: block; }
+        .file-preview__header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 12px; padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .file-preview__info {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .file-preview__icon { font-size: 1.4rem; }
+        .file-preview__name {
+            font-size: 0.85rem; font-weight: 600; color: var(--text-primary);
+        }
+        .file-preview__size {
+            font-size: 0.75rem; color: var(--text-muted);
+        }
+        .file-preview__remove {
+            background: rgba(248,113,113,0.1);
+            color: var(--error); border: 1px solid rgba(248,113,113,0.2);
+            border-radius: 6px; padding: 6px 12px;
+            font-family: 'Inter', sans-serif; font-size: 0.78rem;
+            cursor: pointer; transition: all 0.2s ease;
+        }
+        .file-preview__remove:hover {
+            background: rgba(248,113,113,0.2);
+        }
+        .file-preview__text {
+            font-size: 0.82rem; line-height: 1.6;
+            color: var(--text-secondary);
+            max-height: 220px; overflow-y: auto;
+            white-space: pre-wrap; word-break: break-word;
+        }
+        .file-preview__status {
+            font-size: 0.8rem; color: var(--success);
+            display: flex; align-items: center; gap: 6px;
+        }
+
+        /* ═══════════════════════════════════════════
+           Action Bar
+           ═══════════════════════════════════════════ */
+        .action-bar {
+            display: flex; align-items: center;
+            justify-content: center; gap: 16px;
+            flex-wrap: wrap; margin-bottom: 32px;
+        }
+        .btn-optimize {
+            position: relative;
+            display: inline-flex; align-items: center; gap: 10px;
+            padding: 14px 40px;
+            background: var(--gradient-primary); color: white;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem; font-weight: 700;
+            border: none; border-radius: var(--radius-xl);
+            cursor: pointer; letter-spacing: 0.3px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s;
+            box-shadow: 0 4px 20px rgba(99,102,241,0.3);
+            overflow: hidden;
+        }
+        .btn-optimize:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(99,102,241,0.4);
+        }
+        .btn-optimize:active:not(:disabled) { transform: translateY(0); }
+        .btn-optimize:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-optimize .shimmer {
+            position: absolute; top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+            animation: shimmer 2.5s infinite;
+        }
+        @keyframes shimmer { 100% { left: 100%; } }
+
+        .btn-clear {
+            padding: 14px 28px;
+            background: transparent; color: var(--text-secondary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.88rem; font-weight: 500;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-xl);
+            cursor: pointer; transition: all 0.2s ease;
+        }
+        .btn-clear:hover {
+            border-color: var(--text-muted);
+            color: var(--text-primary);
+            background: rgba(255,255,255,0.03);
+        }
+
+        /* ═══════════════════════════════════════════
+           Pipeline Progress
+           ═══════════════════════════════════════════ */
+        .pipeline {
+            display: none; margin-bottom: 24px;
+        }
+        .pipeline.visible { display: block; }
+        .pipeline-steps {
+            display: flex; align-items: center; justify-content: center;
+            gap: 8px; flex-wrap: wrap;
+        }
+        .pipeline-step {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            font-size: 0.82rem; color: var(--text-muted);
+            transition: all 0.3s ease;
+        }
+        .pipeline-step.active {
+            border-color: var(--accent-1); color: var(--accent-3);
+            background: rgba(99,102,241,0.08);
+        }
+        .pipeline-step.done {
+            border-color: var(--success); color: var(--success);
+            background: var(--success-bg);
+        }
+        .pipeline-step .spinner {
+            width: 14px; height: 14px;
+            border: 2px solid rgba(99,102,241,0.2);
+            border-top-color: var(--accent-1);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: none;
+        }
+        .pipeline-step.active .spinner { display: block; }
+        .pipeline-arrow {
+            color: var(--text-muted); font-size: 0.8rem;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ═══════════════════════════════════════════
+           Output Section
+           ═══════════════════════════════════════════ */
+        .output-section {
+            display: none;
+            animation: slideUp 0.5s ease-out;
+        }
+        .output-section.visible { display: block; }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Download Card ── */
+        .download-card {
+            display: none;
+            background: linear-gradient(135deg, rgba(52,211,153,0.08) 0%, rgba(99,102,241,0.08) 100%);
+            border: 1px solid rgba(52,211,153,0.25);
+            border-radius: var(--radius-lg);
+            padding: 24px; margin-bottom: 20px;
+            text-align: center;
+            animation: slideUp 0.5s ease-out;
+        }
+        .download-card.visible { display: block; }
+        .download-card h3 {
+            font-size: 1.1rem; font-weight: 700;
+            color: var(--text-primary); margin-bottom: 8px;
+        }
+        .download-card p {
+            font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;
+        }
+        .btn-download-docx {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 12px 32px;
+            background: var(--success); color: #0a0e1a;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem; font-weight: 700;
+            border: none; border-radius: var(--radius-xl);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 20px rgba(52,211,153,0.3);
+        }
+        .btn-download-docx:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(52,211,153,0.4);
+        }
+
+        /* ── Analysis Card ── */
+        .output-header {
+            display: flex; align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px; flex-wrap: wrap; gap: 12px;
+        }
+        .output-header h2 {
+            font-size: 1.3rem; font-weight: 700;
+            color: var(--text-primary);
+            display: flex; align-items: center; gap: 10px;
+        }
+        .output-actions { display: flex; gap: 10px; }
+        .btn-icon {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 16px;
+            background: rgba(99,102,241,0.1); color: var(--accent-3);
+            border: 1px solid rgba(99,102,241,0.2);
+            border-radius: var(--radius-sm);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8rem; font-weight: 500;
+            cursor: pointer; transition: all 0.2s ease;
+        }
+        .btn-icon:hover {
+            background: rgba(99,102,241,0.2); border-color: var(--accent-1);
+        }
+        .btn-icon.copied {
+            background: rgba(52,211,153,0.15);
+            border-color: var(--success); color: var(--success);
+        }
+
+        .output-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 28px; min-height: 200px;
+            box-shadow: var(--shadow-md);
+        }
+        .output-card .result-content {
+            font-size: 0.9rem; line-height: 1.8;
+            color: var(--text-primary);
+            white-space: pre-wrap; word-break: break-word;
+        }
+        .result-content h1, .result-content h2, .result-content h3 {
+            color: var(--accent-3); margin-top: 24px; margin-bottom: 10px;
+        }
+        .result-content h2 { font-size: 1.15rem; }
+        .result-content h3 { font-size: 1rem; }
+        .result-content strong { color: var(--accent-3); }
+        .result-content em { color: var(--text-secondary); font-style: italic; }
+        .result-content ul, .result-content ol { padding-left: 20px; margin: 8px 0; }
+        .result-content li { margin: 4px 0; }
+        .result-content hr {
+            border: none; border-top: 1px solid var(--border-color); margin: 20px 0;
+        }
+
+        /* ═══════════════════════════════════════════
+           Footer
+           ═══════════════════════════════════════════ */
+        .footer {
+            text-align: center; padding: 40px 20px 20px;
+            color: var(--text-muted); font-size: 0.78rem;
+        }
+
+        /* ═══════════════════════════════════════════
+           Toast
+           ═══════════════════════════════════════════ */
+        .toast {
+            position: fixed; bottom: 24px; right: 24px;
+            padding: 12px 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            color: var(--text-primary); font-size: 0.85rem;
+            box-shadow: var(--shadow-lg); z-index: 1000;
+            opacity: 0; transform: translateY(10px);
+            transition: all 0.3s ease; pointer-events: none;
+        }
+        .toast.show {
+            opacity: 1; transform: translateY(0); pointer-events: auto;
+        }
+
+        /* ═══════════════════════════════════════════
+           Scrollbar
+           ═══════════════════════════════════════════ */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* ═══════════════════════════════════════════
+           Responsive
+           ═══════════════════════════════════════════ */
+        @media (max-width: 480px) {
+            .container { padding: 16px 12px 40px; }
+            .header { padding: 24px 0 20px; }
+            .input-card { padding: 16px; }
+            .input-card textarea { min-height: 200px; font-size: 0.85rem; padding: 12px; }
+            .dropzone { min-height: 200px; padding: 24px 16px; }
+            .output-card { padding: 18px; }
+            .btn-optimize { padding: 12px 28px; font-size: 0.9rem; }
+            .action-bar { gap: 10px; }
+            .pipeline-steps { flex-direction: column; }
+            .pipeline-arrow { transform: rotate(90deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ── Header ── -->
+        <header class="header">
+            <div class="header__badge">
+                <span class="dot"></span>
+                AI-Powered
+            </div>
+            <h1>Resume Optimizer</h1>
+            <p>Upload or paste your resume and job description — get an ATS-optimized, recruiter-ready resume as a DOCX download.</p>
+        </header>
+
+        <!-- ── Input Grid ── -->
+        <div class="input-grid">
+            <!-- Resume Input -->
+            <div class="input-card" id="resume-card">
+                <div class="input-card__header">
+                    <div class="input-card__label">
+                        <span class="input-card__icon">📄</span>
+                        Your Resume
+                    </div>
+                    <span class="input-card__charcount" id="resume-count">0 chars</span>
+                </div>
+
+                <div class="tab-switcher">
+                    <button class="tab-btn active" onclick="switchTab('resume', 'paste')" id="resume-tab-paste">📝 Paste</button>
+                    <button class="tab-btn" onclick="switchTab('resume', 'upload')" id="resume-tab-upload">📁 Upload</button>
+                </div>
+
+                <!-- Paste Tab -->
+                <div class="tab-content active" id="resume-paste-tab">
+                    <textarea id="resume-input" placeholder="Paste your complete resume here...&#10;&#10;Include your name, contact info, summary, experience, education, skills, etc."></textarea>
+                </div>
+
+                <!-- Upload Tab -->
+                <div class="tab-content" id="resume-upload-tab">
+                    <div class="dropzone" id="resume-dropzone">
+                        <span class="dropzone__icon">📂</span>
+                        <div class="dropzone__text">
+                            Drag & drop your resume or <strong>browse</strong>
+                        </div>
+                        <div class="dropzone__formats">Supports: .docx, .pdf, .txt</div>
+                        <input type="file" id="resume-file" accept=".docx,.pdf,.txt" onchange="handleFileUpload('resume', this)">
+                    </div>
+                    <div class="file-preview" id="resume-file-preview">
+                        <div class="file-preview__header">
+                            <div class="file-preview__info">
+                                <span class="file-preview__icon" id="resume-file-icon">📄</span>
+                                <div>
+                                    <div class="file-preview__name" id="resume-file-name">document.docx</div>
+                                    <div class="file-preview__size" id="resume-file-size">125 KB</div>
+                                </div>
+                            </div>
+                            <button class="file-preview__remove" onclick="removeFile('resume')">✕ Remove</button>
+                        </div>
+                        <div class="file-preview__status" id="resume-extract-status">
+                            ✅ Text extracted successfully
+                        </div>
+                        <div class="file-preview__text" id="resume-extracted-text"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- JD Input -->
+            <div class="input-card" id="jd-card">
+                <div class="input-card__header">
+                    <div class="input-card__label">
+                        <span class="input-card__icon">🎯</span>
+                        Job Description
+                    </div>
+                    <span class="input-card__charcount" id="jd-count">0 chars</span>
+                </div>
+
+                <div class="tab-switcher">
+                    <button class="tab-btn active" onclick="switchTab('jd', 'paste')" id="jd-tab-paste">📝 Paste</button>
+                    <button class="tab-btn" onclick="switchTab('jd', 'upload')" id="jd-tab-upload">📁 Upload</button>
+                </div>
+
+                <!-- Paste Tab -->
+                <div class="tab-content active" id="jd-paste-tab">
+                    <textarea id="jd-input" placeholder="Paste the target job description here...&#10;&#10;Include the role title, responsibilities, requirements, and qualifications."></textarea>
+                </div>
+
+                <!-- Upload Tab -->
+                <div class="tab-content" id="jd-upload-tab">
+                    <div class="dropzone" id="jd-dropzone">
+                        <span class="dropzone__icon">📂</span>
+                        <div class="dropzone__text">
+                            Drag & drop the JD or <strong>browse</strong>
+                        </div>
+                        <div class="dropzone__formats">Supports: .docx, .pdf, .txt</div>
+                        <input type="file" id="jd-file" accept=".docx,.pdf,.txt" onchange="handleFileUpload('jd', this)">
+                    </div>
+                    <div class="file-preview" id="jd-file-preview">
+                        <div class="file-preview__header">
+                            <div class="file-preview__info">
+                                <span class="file-preview__icon" id="jd-file-icon">📄</span>
+                                <div>
+                                    <div class="file-preview__name" id="jd-file-name">job_description.pdf</div>
+                                    <div class="file-preview__size" id="jd-file-size">89 KB</div>
+                                </div>
+                            </div>
+                            <button class="file-preview__remove" onclick="removeFile('jd')">✕ Remove</button>
+                        </div>
+                        <div class="file-preview__status" id="jd-extract-status">
+                            ✅ Text extracted successfully
+                        </div>
+                        <div class="file-preview__text" id="jd-extracted-text"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Action Bar ── -->
+        <div class="action-bar">
+            <button class="btn-optimize" id="btn-optimize" onclick="optimizeResume()">
+                <span class="shimmer"></span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                    <path d="M2 17l10 5 10-5"/>
+                    <path d="M2 12l10 5 10-5"/>
+                </svg>
+                Optimize Resume
+            </button>
+            <button class="btn-clear" onclick="clearAll()">Clear All</button>
+        </div>
+
+        <!-- ── Pipeline Progress ── -->
+        <div class="pipeline" id="pipeline">
+            <div class="pipeline-steps">
+                <div class="pipeline-step" id="step-extract">
+                    <span class="spinner"></span>
+                    📥 Extract Text
+                </div>
+                <span class="pipeline-arrow">→</span>
+                <div class="pipeline-step" id="step-optimize">
+                    <span class="spinner"></span>
+                    🤖 Optimize Content
+                </div>
+                <span class="pipeline-arrow">→</span>
+                <div class="pipeline-step" id="step-analyze">
+                    <span class="spinner"></span>
+                    📊 Analysis
+                </div>
+                <span class="pipeline-arrow">→</span>
+                <div class="pipeline-step" id="step-assemble">
+                    <span class="spinner"></span>
+                    📐 Build DOCX
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Download Card ── -->
+        <div class="download-card" id="download-card">
+            <h3>✅ Your Optimized Resume is Ready!</h3>
+            <p>Generated using your template with ATS-optimized content.</p>
+            <button class="btn-download-docx" id="btn-download-docx" onclick="downloadDocx()">
+                📥 Download Resume (.docx)
+            </button>
+        </div>
+
+        <!-- ── Output / Analysis ── -->
+        <div class="output-section" id="output-section">
+            <div class="output-header">
+                <h2>📊 Optimization Analysis</h2>
+                <div class="output-actions">
+                    <button class="btn-icon" id="btn-copy" onclick="copyResult()">📋 Copy</button>
+                </div>
+            </div>
+            <div class="output-card">
+                <div class="result-content" id="result-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Toast ── -->
+    <div class="toast" id="toast"></div>
+
+    <!-- ── Footer ── -->
+    <footer class="footer">
+        Built for interview prep &nbsp;•&nbsp; Powered by AI &nbsp;•&nbsp; Your data is never stored
+    </footer>
+
+    <script>
+        // ═══════════════════════════════════════════
+        // State
+        // ═══════════════════════════════════════════
+        let resumeText = '';   // Final text to send (from paste or upload)
+        let jdText = '';       // Final text to send (from paste or upload)
+        let optimizedData = null;  // Structured JSON from LLM
+        let analysisText = '';     // Streamed analysis text
+
+        let resumeSource = 'paste'; // 'paste' or 'upload'
+        let jdSource = 'paste';
+
+        // ═══════════════════════════════════════════
+        // DOM References
+        // ═══════════════════════════════════════════
+        const resumeInput = document.getElementById('resume-input');
+        const jdInput = document.getElementById('jd-input');
+        const resumeCount = document.getElementById('resume-count');
+        const jdCount = document.getElementById('jd-count');
+        const btnOptimize = document.getElementById('btn-optimize');
+        const pipeline = document.getElementById('pipeline');
+        const downloadCard = document.getElementById('download-card');
+        const outputSection = document.getElementById('output-section');
+        const resultContent = document.getElementById('result-content');
+
+        // ═══════════════════════════════════════════
+        // Character Counters
+        // ═══════════════════════════════════════════
+        resumeInput.addEventListener('input', () => {
+            resumeCount.textContent = `${resumeInput.value.length.toLocaleString()} chars`;
+        });
+        jdInput.addEventListener('input', () => {
+            jdCount.textContent = `${jdInput.value.length.toLocaleString()} chars`;
+        });
+
+        // ═══════════════════════════════════════════
+        // Tab Switching
+        // ═══════════════════════════════════════════
+        function switchTab(section, tab) {
+            // Update buttons
+            document.getElementById(`${section}-tab-paste`).classList.toggle('active', tab === 'paste');
+            document.getElementById(`${section}-tab-upload`).classList.toggle('active', tab === 'upload');
+
+            // Update content
+            document.getElementById(`${section}-paste-tab`).classList.toggle('active', tab === 'paste');
+            document.getElementById(`${section}-upload-tab`).classList.toggle('active', tab === 'upload');
+
+            if (section === 'resume') resumeSource = tab;
+            else jdSource = tab;
+        }
+
+        // ═══════════════════════════════════════════
+        // File Upload & Extraction
+        // ═══════════════════════════════════════════
+        // Drag & drop
+        ['resume-dropzone', 'jd-dropzone'].forEach(id => {
+            const dz = document.getElementById(id);
+            dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+            dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+            dz.addEventListener('drop', e => {
+                e.preventDefault();
+                dz.classList.remove('dragover');
+                const section = id.startsWith('resume') ? 'resume' : 'jd';
+                const fileInput = document.getElementById(`${section}-file`);
+                fileInput.files = e.dataTransfer.files;
+                handleFileUpload(section, fileInput);
+            });
+        });
+
+        async function handleFileUpload(section, input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const preview = document.getElementById(`${section}-file-preview`);
+            const dropzone = document.getElementById(`${section}-dropzone`);
+            const nameEl = document.getElementById(`${section}-file-name`);
+            const sizeEl = document.getElementById(`${section}-file-size`);
+            const iconEl = document.getElementById(`${section}-file-icon`);
+            const statusEl = document.getElementById(`${section}-extract-status`);
+            const textEl = document.getElementById(`${section}-extracted-text`);
+
+            // Show preview, hide dropzone
+            dropzone.style.display = 'none';
+            preview.classList.add('visible');
+
+            // File info
+            const ext = file.name.split('.').pop().toLowerCase();
+            nameEl.textContent = file.name;
+            sizeEl.textContent = formatBytes(file.size);
+            iconEl.textContent = ext === 'pdf' ? '📕' : ext === 'docx' ? '📘' : '📄';
+            statusEl.innerHTML = '<span class="spinner" style="display:inline-block;width:12px;height:12px;border:2px solid rgba(99,102,241,0.2);border-top-color:var(--accent-1);border-radius:50%;animation:spin 0.8s linear infinite;"></span> Extracting text...';
+            statusEl.style.color = 'var(--accent-3)';
+            textEl.textContent = '';
+
+            // Upload & extract
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const resp = await fetch('/extract', { method: 'POST', body: formData });
+                const data = await resp.json();
+
+                if (data.error) {
+                    statusEl.innerHTML = `❌ ${data.error}`;
+                    statusEl.style.color = 'var(--error)';
+                    return;
+                }
+
+                statusEl.innerHTML = '✅ Text extracted successfully';
+                statusEl.style.color = 'var(--success)';
+                textEl.textContent = data.text.substring(0, 2000) + (data.text.length > 2000 ? '\n...(truncated for preview)' : '');
+
+                // Store extracted text
+                if (section === 'resume') {
+                    resumeText = data.text;
+                    resumeCount.textContent = `${data.text.length.toLocaleString()} chars`;
+                } else {
+                    jdText = data.text;
+                    jdCount.textContent = `${data.text.length.toLocaleString()} chars`;
+                }
+
+            } catch (err) {
+                statusEl.innerHTML = `❌ Upload failed: ${err.message}`;
+                statusEl.style.color = 'var(--error)';
+            }
+        }
+
+        function removeFile(section) {
+            const preview = document.getElementById(`${section}-file-preview`);
+            const dropzone = document.getElementById(`${section}-dropzone`);
+            const fileInput = document.getElementById(`${section}-file`);
+            const countEl = document.getElementById(`${section}-count`);
+
+            preview.classList.remove('visible');
+            dropzone.style.display = '';
+            fileInput.value = '';
+            countEl.textContent = '0 chars';
+
+            if (section === 'resume') resumeText = '';
+            else jdText = '';
+        }
+
+        // ═══════════════════════════════════════════
+        // Get the final text from either paste or upload
+        // ═══════════════════════════════════════════
+        function getResumeText() {
+            if (resumeSource === 'upload' && resumeText) return resumeText;
+            return resumeInput.value.trim();
+        }
+        function getJdText() {
+            if (jdSource === 'upload' && jdText) return jdText;
+            return jdInput.value.trim();
+        }
+
+        // ═══════════════════════════════════════════
+        // Pipeline Step Management
+        // ═══════════════════════════════════════════
+        function setStep(stepId, state) {
+            const el = document.getElementById(stepId);
+            el.classList.remove('active', 'done');
+            if (state) el.classList.add(state);
+        }
+
+        function resetPipeline() {
+            ['step-extract', 'step-optimize', 'step-analyze', 'step-assemble'].forEach(id => setStep(id, ''));
+        }
+
+        // ═══════════════════════════════════════════
+        // Markdown-to-HTML
+        // ═══════════════════════════════════════════
+        function markdownToHtml(text) {
+            return text
+                .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+                .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+                .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+                .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                .replace(/^---$/gm, '<hr>')
+                .replace(/\n/g, '<br>');
+        }
+
+        // ═══════════════════════════════════════════
+        // Core: Optimize Resume
+        // ═══════════════════════════════════════════
+        async function optimizeResume() {
+            const resume = getResumeText();
+            const jd = getJdText();
+
+            if (!resume) { showToast('⚠️ Please provide your resume'); return; }
+            if (!jd) { showToast('⚠️ Please provide the job description'); return; }
+
+            // UI state
+            btnOptimize.disabled = true;
+            optimizedData = null;
+            analysisText = '';
+            resultContent.innerHTML = '';
+            outputSection.classList.remove('visible');
+            downloadCard.classList.remove('visible');
+
+            // Show pipeline
+            pipeline.classList.add('visible');
+            resetPipeline();
+            setStep('step-extract', 'done');  // Already extracted
+            setStep('step-optimize', 'active');
+
+            try {
+                const response = await fetch('/optimize', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ resume, jd })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || 'Server error');
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const text = decoder.decode(value, { stream: true });
+                    const lines = text.split('\n');
+
+                    for (const line of lines) {
+                        if (!line.startsWith('data: ')) continue;
+                        const payload = line.slice(6).trim();
+                        if (payload === '[DONE]') break;
+
+                        try {
+                            const data = JSON.parse(payload);
+
+                            if (data.type === 'status') {
+                                // Status update
+                                if (data.content.includes('analysis') || data.content.includes('Analysis')) {
+                                    setStep('step-optimize', 'done');
+                                    setStep('step-analyze', 'active');
+                                    outputSection.classList.add('visible');
+                                }
+                            } else if (data.type === 'json') {
+                                // Got structured resume data
+                                optimizedData = data.data;
+                                setStep('step-optimize', 'done');
+                                setStep('step-analyze', 'active');
+
+                                // Build DOCX in background
+                                setStep('step-assemble', 'active');
+                            } else if (data.type === 'stream') {
+                                // Analysis streaming
+                                outputSection.classList.add('visible');
+                                analysisText += data.content;
+                                resultContent.innerHTML = markdownToHtml(analysisText);
+                                resultContent.scrollTop = resultContent.scrollHeight;
+                            } else if (data.type === 'error') {
+                                throw new Error(data.content);
+                            }
+                        } catch (e) {
+                            if (e.message && !e.message.includes('JSON')) {
+                                throw e;
+                            }
+                        }
+                    }
+                }
+
+                // Finalize pipeline
+                setStep('step-analyze', 'done');
+                setStep('step-assemble', 'done');
+
+                // Show download card
+                if (optimizedData) {
+                    downloadCard.classList.add('visible');
+                }
+
+            } catch (err) {
+                showToast(`❌ ${err.message}`);
+                resetPipeline();
+                pipeline.classList.remove('visible');
+            } finally {
+                btnOptimize.disabled = false;
+            }
+        }
+
+        // ═══════════════════════════════════════════
+        // Download DOCX
+        // ═══════════════════════════════════════════
+        async function downloadDocx() {
+            if (!optimizedData) {
+                showToast('⚠️ No optimized data available');
+                return;
+            }
+
+            try {
+                const resp = await fetch('/download-docx', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ optimized_data: optimizedData })
+                });
+
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    throw new Error(err.error || 'Download failed');
+                }
+
+                const blob = await resp.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'optimized_resume.docx';
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast('📥 Resume downloaded!');
+            } catch (err) {
+                showToast(`❌ ${err.message}`);
+            }
+        }
+
+        // ═══════════════════════════════════════════
+        // Utilities
+        // ═══════════════════════════════════════════
+        function clearAll() {
+            resumeInput.value = '';
+            jdInput.value = '';
+            resumeCount.textContent = '0 chars';
+            jdCount.textContent = '0 chars';
+            resumeText = '';
+            jdText = '';
+            optimizedData = null;
+            analysisText = '';
+            outputSection.classList.remove('visible');
+            downloadCard.classList.remove('visible');
+            pipeline.classList.remove('visible');
+            resultContent.innerHTML = '';
+
+            // Reset file uploads
+            removeFile('resume');
+            removeFile('jd');
+
+            // Switch back to paste tabs
+            switchTab('resume', 'paste');
+            switchTab('jd', 'paste');
+
+            showToast('🗑️ Cleared');
+        }
+
+        function copyResult() {
+            if (!analysisText) { showToast('Nothing to copy'); return; }
+            navigator.clipboard.writeText(analysisText).then(() => {
+                const btn = document.getElementById('btn-copy');
+                btn.classList.add('copied');
+                btn.innerHTML = '✅ Copied!';
+                showToast('📋 Copied to clipboard');
+                setTimeout(() => {
+                    btn.classList.remove('copied');
+                    btn.innerHTML = '📋 Copy';
+                }, 2000);
+            });
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2500);
+        }
+    </script>
+</body>
+</html>
