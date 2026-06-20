@@ -910,18 +910,114 @@
             setStep('step-optimize', 'active');
 
             try {
-                const response = await fetch('/optimize', {
+                // 1. Fetch API Key and Prompts from backend
+                const configResp = await fetch('/api/config');
+                const config = await configResp.json();
+                const apiKey = config.api_key;
+
+                if (!apiKey) {
+                    console.log("No API key configured for client-side routing. Falling back to backend.");
+                    await runBackendOptimizeFallback(resume, jd);
+                    return;
+                }
+
+                // Fetch compiled prompts
+                const promptsResp = await fetch('/api/prompts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ resume, jd })
                 });
+                const prompts = await promptsResp.json();
 
-                if (!response.ok) {
-                    const err = await response.json();
-                    throw new Error(err.error || 'Server error');
+                // 2. Phase 1: Optimize resume content directly via agentrouter
+                console.log("Attempting direct client-side optimization...");
+                let phase1Resp;
+                try {
+                    phase1Resp = await fetch('https://agentrouter.org/v1/chat/completions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${apiKey}`,
+                            'Originator': 'codex_cli_rs',
+                            'Version': '0.101.0'
+                        },
+                        body: JSON.stringify({
+                            model: 'deepseek-v4-flash',
+                            messages: [
+                                { role: 'system', content: prompts.system_json },
+                                { role: 'user', content: prompts.user_json }
+                            ],
+                            temperature: 0.4
+                        })
+                    });
+                } catch (networkErr) {
+                    console.warn("Direct network connection to AgentRouter failed. Falling back to backend:", networkErr);
+                    await runBackendOptimizeFallback(resume, jd);
+                    return;
                 }
 
-                const reader = response.body.getReader();
+                if (!phase1Resp.ok) {
+                    const errorText = await phase1Resp.text();
+                    console.warn(`Direct optimization returned status ${phase1Resp.status}. Falling back to backend. Error: ${errorText}`);
+                    await runBackendOptimizeFallback(resume, jd);
+                    return;
+                }
+
+                const phase1Result = await phase1Resp.json();
+                const rawResponseText = phase1Result.choices[0].message.content;
+
+                // 3. Send raw JSON output to backend to parse cleanly
+                const parseResp = await fetch('/api/parse-json', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ raw_response: rawResponseText })
+                });
+                const parsedResult = await parseResp.json();
+
+                if (!parsedResult.success) {
+                    throw new Error(parsedResult.error || "Failed to parse LLM structured data");
+                }
+
+                optimizedData = parsedResult.data;
+                setStep('step-optimize', 'done');
+                setStep('step-analyze', 'active');
+                setStep('step-assemble', 'active');
+
+                // 4. Phase 2: Stream analysis directly via agentrouter
+                setStep('step-analyze', 'active');
+                outputSection.classList.add('visible');
+
+                const optimizedSummary = `Name: ${optimizedData.name || ''}\nSummary: ${optimizedData.summary || ''}\nSkills: ${JSON.stringify(optimizedData.skills || [])}\n`;
+                const userAnalysisPrompt = prompts.user_analysis_template
+                    .replace('{jd}', jd)
+                    .replace('{optimized_summary}', optimizedSummary);
+
+                console.log("Attempting direct client-side analysis streaming...");
+                const phase2Resp = await fetch('https://agentrouter.org/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Originator': 'codex_cli_rs',
+                        'Version': '0.101.0'
+                    },
+                    body: JSON.stringify({
+                        model: 'deepseek-v4-flash',
+                        messages: [
+                            { role: 'system', content: prompts.system_analysis },
+                            { role: 'user', content: userAnalysisPrompt }
+                        ],
+                        temperature: 0.4,
+                        stream: true
+                    })
+                });
+
+                if (!phase2Resp.ok) {
+                    const errorText = await phase2Resp.text();
+                    throw new Error(`Direct streaming analysis failed (status ${phase2Resp.status}): ${errorText}`);
+                }
+
+                const reader = phase2Resp.body.getReader();
                 const decoder = new TextDecoder();
                 let buffer = '';
 
@@ -931,49 +1027,22 @@
 
                     buffer += decoder.decode(value, { stream: true });
                     const lines = buffer.split('\n');
-                    
-                    // The last element is either empty (if buffer ended with a newline)
-                    // or a partial line. Save it back to buffer.
                     buffer = lines.pop();
 
                     for (const line of lines) {
-                        const trimmedLine = line.trim();
-                        if (!trimmedLine.startsWith('data: ')) continue;
-                        const payload = trimmedLine.slice(6).trim();
+                        const trimmed = line.trim();
+                        if (!trimmed.startsWith('data: ')) continue;
+                        const payload = trimmed.slice(6).trim();
                         if (payload === '[DONE]') break;
 
                         try {
-                            const data = JSON.parse(payload);
-
-                            if (data.type === 'status') {
-                                // Status update
-                                if (data.content.includes('analysis') || data.content.includes('Analysis')) {
-                                    setStep('step-optimize', 'done');
-                                    setStep('step-analyze', 'active');
-                                    outputSection.classList.add('visible');
-                                }
-                            } else if (data.type === 'json') {
-                                // Got structured resume data
-                                optimizedData = data.data;
-                                setStep('step-optimize', 'done');
-                                setStep('step-analyze', 'active');
-
-                                // Build DOCX in background
-                                setStep('step-assemble', 'active');
-                            } else if (data.type === 'stream') {
-                                // Analysis streaming
-                                outputSection.classList.add('visible');
-                                analysisText += data.content;
-                                resultContent.innerHTML = markdownToHtml(analysisText);
-                                resultContent.scrollTop = resultContent.scrollHeight;
-                            } else if (data.type === 'error') {
-                                throw new Error(data.content);
-                            }
+                            const chunkData = JSON.parse(payload);
+                            const chunkContent = chunkData.choices[0].delta.content || '';
+                            analysisText += chunkContent;
+                            resultContent.innerHTML = markdownToHtml(analysisText);
+                            resultContent.scrollTop = resultContent.scrollHeight;
                         } catch (e) {
-                            // If it's not a JSON parsing error, rethrow it
-                            if (e.name !== 'SyntaxError' || !e.message.includes('JSON')) {
-                                throw e;
-                            }
+                            // Ignore parsing errors for partial/malformed stream chunks
                         }
                     }
                 }
@@ -993,6 +1062,75 @@
                 pipeline.classList.remove('visible');
             } finally {
                 btnOptimize.disabled = false;
+            }
+        }
+
+        async function runBackendOptimizeFallback(resume, jd) {
+            console.log("Running backend fallback...");
+            const response = await fetch('/optimize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ resume, jd })
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || 'Server error');
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop();
+
+                for (const line of lines) {
+                    const trimmedLine = line.trim();
+                    if (!trimmedLine.startsWith('data: ')) continue;
+                    const payload = trimmedLine.slice(6).trim();
+                    if (payload === '[DONE]') break;
+
+                    try {
+                        const data = JSON.parse(payload);
+
+                        if (data.type === 'status') {
+                            if (data.content.includes('analysis') || data.content.includes('Analysis')) {
+                                setStep('step-optimize', 'done');
+                                setStep('step-analyze', 'active');
+                                outputSection.classList.add('visible');
+                            }
+                        } else if (data.type === 'json') {
+                            optimizedData = data.data;
+                            setStep('step-optimize', 'done');
+                            setStep('step-analyze', 'active');
+                            setStep('step-assemble', 'active');
+                        } else if (data.type === 'stream') {
+                            outputSection.classList.add('visible');
+                            analysisText += data.content;
+                            resultContent.innerHTML = markdownToHtml(analysisText);
+                            resultContent.scrollTop = resultContent.scrollHeight;
+                        } else if (data.type === 'error') {
+                            throw new Error(data.content);
+                        }
+                    } catch (e) {
+                        if (e.name !== 'SyntaxError' || !e.message.includes('JSON')) {
+                            throw e;
+                        }
+                    }
+                }
+            }
+
+            setStep('step-analyze', 'done');
+            setStep('step-assemble', 'done');
+
+            if (optimizedData) {
+                downloadCard.classList.add('visible');
             }
         }
 

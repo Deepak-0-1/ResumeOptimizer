@@ -210,6 +210,43 @@ def index():
     return render_template("index.html")
 
 
+@app.route("/api/config", methods=["GET"])
+def get_config():
+    """Retrieve the API key for client-side API calls."""
+    return jsonify({
+        "api_key": os.environ.get("AGENTROUTER_API_KEY", "")
+    })
+
+
+@app.route("/api/prompts", methods=["POST"])
+def get_prompts():
+    """Pre-compile and template system/user prompts for both phases."""
+    data = request.get_json() or {}
+    resume = data.get("resume", "").strip()
+    jd = data.get("jd", "").strip()
+
+    json_prompt = USER_PROMPT_JSON.format(resume=resume, jd=jd)
+
+    return jsonify({
+        "system_json": SYSTEM_PROMPT_JSON,
+        "user_json": json_prompt,
+        "system_analysis": SYSTEM_PROMPT_ANALYSIS,
+        "user_analysis_template": USER_PROMPT_ANALYSIS
+    })
+
+
+@app.route("/api/parse-json", methods=["POST"])
+def parse_json():
+    """Parse the raw LLM response into structured JSON on the backend."""
+    data = request.get_json() or {}
+    raw_response = data.get("raw_response", "")
+    try:
+        parsed = parse_llm_json(raw_response)
+        return jsonify({"success": True, "data": parsed})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+
+
 @app.route("/extract", methods=["POST"])
 def extract():
     """Extract text from an uploaded file (DOCX/PDF/TXT).
