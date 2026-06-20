@@ -38,8 +38,8 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/resume_optimizer.git
-cd resume_optimizer
+git clone https://github.com/Deepak-0-1/ResumeOptimizer.git
+cd ResumeOptimizer
 
 # Install dependencies with uv
 uv sync
