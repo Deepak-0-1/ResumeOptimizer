@@ -923,17 +923,23 @@
 
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
+                let buffer = '';
 
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) break;
 
-                    const text = decoder.decode(value, { stream: true });
-                    const lines = text.split('\n');
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    
+                    // The last element is either empty (if buffer ended with a newline)
+                    // or a partial line. Save it back to buffer.
+                    buffer = lines.pop();
 
                     for (const line of lines) {
-                        if (!line.startsWith('data: ')) continue;
-                        const payload = line.slice(6).trim();
+                        const trimmedLine = line.trim();
+                        if (!trimmedLine.startsWith('data: ')) continue;
+                        const payload = trimmedLine.slice(6).trim();
                         if (payload === '[DONE]') break;
 
                         try {
@@ -964,7 +970,8 @@
                                 throw new Error(data.content);
                             }
                         } catch (e) {
-                            if (e.message && !e.message.includes('JSON')) {
+                            // If it's not a JSON parsing error, rethrow it
+                            if (e.name !== 'SyntaxError' || !e.message.includes('JSON')) {
                                 throw e;
                             }
                         }
