@@ -43,6 +43,7 @@ class AgentRouterClient:
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
+        response = None
         try:
             response = self.client.chat.completions.create(
                 model=model,
@@ -51,7 +52,14 @@ class AgentRouterClient:
             )
             return response.choices[0].message.content
         except Exception as e:
-            return f"Error: {e}"
+            print("--- API ERROR DEBUG ---")
+            print(f"Exception: {e}")
+            print(f"Response type: {type(response)}")
+            print(f"Response value: {response}")
+            import traceback
+            traceback.print_exc()
+            print("-----------------------")
+            return f"Error: {e} | response_type={type(response)} | response={response}"
 
     def ask_stream(self, prompt: str, system_prompt: str = "", model: str = "deepseek-v4-flash"):
         """Generator that yields content chunks for streaming responses."""
